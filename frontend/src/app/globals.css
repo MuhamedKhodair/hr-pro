@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --radius: 0.625rem;
+}
+
+:root {
+  --background: #faf9f6;
+  --foreground: #1a1a2e;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e4f0;
+  --secondary-foreground: #1a1a2e;
+  --muted: #f1f0f5;
+  --muted-foreground: #6b6b80;
+  --accent: #a78bfa;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e0e8;
+  --input: #e2e0e8;
+  --ring: #6366f1;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a2e;
+  --sidebar-muted: #f1f0f5;
+}
+
+.dark {
+  --background: #0f0f1a;
+  --foreground: #e8e4f0;
+  --primary: #818cf8;
+  --primary-foreground: #0f0f1a;
+  --secondary: #1e1b2e;
+  --secondary-foreground: #e8e4f0;
+  --muted: #1a1a2e;
+  --muted-foreground: #9d9bb5;
+  --accent: #a78bfa;
+  --accent-foreground: #0f0f1a;
+  --destructive: #f87171;
+  --destructive-foreground: #0f0f1a;
+  --border: #2a2740;
+  --input: #2a2740;
+  --ring: #818cf8;
+  --sidebar: #14142a;
+  --sidebar-foreground: #e8e4f0;
+  --sidebar-muted: #1e1b2e;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}

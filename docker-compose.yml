@@ -1,0 +1,19 @@
+services:
+  # PostgreSQL is optional. By default the project uses SQLite.
+  # Uncomment below and set DATABASE_URL in backend/.env to use PostgreSQL:
+  # DATABASE_URL="postgresql://hrproj:hrproj_secret@localhost:5432/hrproj"
+  #
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: hrproj-db
+  #   ports:
+  #     - '5432:5432'
+  #   environment:
+  #     POSTGRES_USER: hrproj
+  #     POSTGRES_PASSWORD: hrproj_secret
+  #     POSTGRES_DB: hrproj
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #
+  # volumes:
+  #   pgdata:

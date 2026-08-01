@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  Admin
+  HR
+  Employee
+}
+
+enum LeaveStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+enum AttendanceStatus {
+  Present
+  Absent
+  HalfDay
+}
+
+enum EmployeeStatus {
+  Active
+  Inactive
+  Terminated
+}
+
+enum PayrollStatus {
+  DRAFT
+  FINALIZED
+  PAID
+}
+
+enum ComponentType {
+  BONUS
+  INCENTIVE
+  DEDUCTION
+  ALLOWANCE
+}
+
+model User {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  password   String
+  role       Role      @default(Employee)
+  employeeId   String?        @unique
+  employee     Employee?      @relation(fields: [employeeId], references: [id])
+  reviewedLeaves LeaveRequest[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Employee {
+  id           String          @id @default(cuid())
+  name         String
+  email        String          @unique
+  phone        String?
+  departmentId String?
+  position     String
+  hireDate     DateTime
+  salary       Float
+  status       EmployeeStatus  @default(Active)
+  department   Department?     @relation(fields: [departmentId], references: [id])
+  user         User?
+  attendance   Attendance[]
+  leaveRequests LeaveRequest[]
+  salaryStructures SalaryStructure[]
+  salaryComponents SalaryComponent[]
+  payrollRecords   PayrollRecord[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Department {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  employees   Employee[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  employeeId String
+  date       DateTime         @default(now())
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     AttendanceStatus @default(Present)
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([employeeId, date])
+}
+
+model LeaveRequest {
+  id         String       @id @default(cuid())
+  employeeId String
+  type       String
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  status     LeaveStatus  @default(Pending)
+  reviewedBy String?
+  reviewer   User?        @relation(fields: [reviewedBy], references: [id])
+  employee   Employee     @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model SalaryStructure {
+  id            String   @id @default(cuid())
+  employeeId    String
+  baseSalary    Float
+  currency      String   @default("USD")
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+model SalaryComponent {
+  id          String        @id @default(cuid())
+  employeeId  String
+  type        ComponentType
+  label       String
+  amount      Float
+  isRecurring Boolean       @default(false)
+  endedAt     DateTime?
+  employee    Employee      @relation(fields: [employeeId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([employeeId])
+}
+
+model AttendancePolicy {
+  id                    String   @id @default(cuid())
+  name                  String
+  lateDeductionRule     String   @default("0")
+  absenceDeductionRule  String   @default("full_day")
+  halfDayRule           String   @default("half_day")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model PayrollRecord {
+  id              String        @id @default(cuid())
+  employeeId      String
+  month           Int
+  year            Int
+  baseSalary      Float
+  totalDeductions Float         @default(0)
+  totalIncentives Float         @default(0)
+  totalBonuses    Float         @default(0)
+  netSalary       Float
+  status          PayrollStatus @default(DRAFT)
+  generatedAt     DateTime?
+  finalizedAt     DateTime?
+  paidAt          DateTime?
+  generatedBy     String?
+  finalizedBy     String?
+  paidBy          String?
+  adjustment      Float         @default(0)
+  adjustmentReason String?
+  employee        Employee      @relation(fields: [employeeId], references: [id])
+  components      PayrollRecordComponent[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([employeeId, month, year])
+  @@unique([employeeId, month, year])
+}
+
+model PayrollRecordComponent {
+  id              String        @id @default(cuid())
+  payrollRecordId String
+  type            ComponentType
+  label           String
+  amount          Float
+  payrollRecord   PayrollRecord @relation(fields: [payrollRecordId], references: [id])
+  createdAt       DateTime      @default(now())
+}
