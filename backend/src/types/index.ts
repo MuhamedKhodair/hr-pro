@@ -6,6 +6,7 @@ export interface JwtPayload {
   email: string;
   role: Role;
   employeeId?: string | null;
+  purpose?: string;
 }
 
 export interface AuthRequest extends Request {
@@ -16,4 +17,5 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
 }

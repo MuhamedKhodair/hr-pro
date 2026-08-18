@@ -2,8 +2,15 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types';
 import * as departmentService from '../services/department.service';
 
-export async function getAll(_req: AuthRequest, res: Response, next: NextFunction) {
+export async function getAll(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    const { page, pageSize } = req.query as { page?: string; pageSize?: string };
+    if (page || pageSize) {
+      const p = Math.max(parseInt(page || '1', 10) || 1, 1);
+      const ps = Math.min(Math.max(parseInt(pageSize || '20', 10) || 20, 1), 100);
+      const result = await departmentService.getAllPaginated({ page: p, pageSize: ps });
+      return res.json({ success: true, data: result });
+    }
     const departments = await departmentService.getAll();
     res.json({ success: true, data: departments });
   } catch (err) {

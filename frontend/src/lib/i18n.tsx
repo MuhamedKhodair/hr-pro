@@ -2,8 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import ar from './translations/ar';
+import en from './translations/en';
 
 export type Locale = 'en' | 'ar';
+
+const dictionaries: Record<Locale, Record<string, string>> = { en, ar };
 
 interface I18nContextValue {
   locale: Locale;
@@ -35,8 +38,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string): string => {
-    if (locale === 'ar' && ar[key]) return ar[key];
-    return key;
+    const dict = dictionaries[locale];
+    return dict?.[key] ?? key;
   }, [locale]);
 
   const dir = locale === 'ar' ? 'rtl' : 'ltr';

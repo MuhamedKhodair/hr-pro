@@ -16,21 +16,24 @@ interface StatsCardProps {
 export function StatsCard({ title, value, icon: Icon, description, index }: StatsCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
+      transition={{ delay: index * 0.08, duration: 0.3 }}
     >
-      <Card className="group hover:shadow-md transition-all duration-300">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">{title}</p>
+      <Card className="group overflow-hidden transition-all hover:border-ring/50 hover:shadow-md">
+        <CardContent className="flex items-start justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <p className="truncate font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
+            </div>
+            <div className="mt-2 font-display text-[30px] font-semibold leading-none tracking-tight text-foreground tabular-nums">
               <AnimatedCounter value={value} />
-              {description && <p className="text-xs text-muted-foreground">{description}</p>}
             </div>
-            <div className="rounded-xl bg-primary/10 p-3 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-              <Icon className="h-6 w-6" />
-            </div>
+            {description && <p className="mt-1 truncate text-xs text-muted-foreground">{description}</p>}
+          </div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+            <Icon className="h-[18px] w-[18px] text-primary" />
           </div>
         </CardContent>
       </Card>

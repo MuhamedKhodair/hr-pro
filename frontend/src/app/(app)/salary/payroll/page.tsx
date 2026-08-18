@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { DollarSign, Plus, CheckCircle, Eye, AlertCircle } from 'lucide-react';
+import { DollarSign, Plus, CheckCircle, Eye, AlertCircle, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExportActions } from '@/components/reports/export-actions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -13,8 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { useApiGet, useApiPost, useApiPatch } from '@/hooks/useApi';
+import { useRequireRole } from '@/hooks/useRequireRole';
+import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { TableSkeleton, EmptyState, ErrorState } from '@/components/tables/data-table';
+import { TableSkeleton, EmptyState, ErrorState, PageHeader } from '@/components/tables/data-table';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/tables/table';
 
 interface PayrollRecord {
   id: string;
@@ -54,6 +58,7 @@ const statusVariant = (status: string) => {
 };
 
 export default function PayrollPage() {
+  useRequireRole(['Admin']);
   const { addToast } = useToast();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -118,31 +123,51 @@ export default function PayrollPage() {
     }
   };
 
+  const handleExportCsv = async () => {
+    try {
+      await api.download(`/salary/payroll/export/csv?month=${month}&year=${year}`, `payroll-${year}-${month}.csv`);
+      addToast('Exported to CSV', 'success');
+    } catch (err: any) {
+      addToast(err.message, 'error');
+    }
+  };
+
   if (isLoading) return <TableSkeleton />;
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Payroll Records</h1>
-          <p className="text-muted-foreground">Generate, review, and finalize monthly payroll</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={String(month)} onChange={(e) => setMonth(Number(e.target.value))} className="w-28">
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</option>
-            ))}
-          </Select>
-          <Select value={String(year)} onChange={(e) => setYear(Number(e.target.value))} className="w-24">
-            {[year - 1, year, year + 1].map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </Select>
-          <Button onClick={() => setGenDialog(true)} className="gap-2">
-            <Plus className="h-4 w-4" /> Generate
-          </Button>
-        </div>
+      <PageHeader
+        title="Payroll Records"
+        description="Generate, review, and finalize monthly payroll"
+        actions={
+          <>
+            <ExportActions
+              excelPath={`/salary/payroll/export/xlsx?month=${month}&year=${year}`}
+              excelFilename={`payroll-${year}-${month}.xlsx`}
+              printPath={`type=payroll&month=${month}&year=${year}`}
+            />
+            <Button variant="outline" onClick={handleExportCsv} className="gap-2">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
+            <Button onClick={() => setGenDialog(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> Generate
+            </Button>
+          </>
+        }
+      />
+
+      <div className="flex items-center gap-2">
+        <Select value={String(month)} onChange={(e) => setMonth(Number(e.target.value))} className="w-28">
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</option>
+          ))}
+        </Select>
+        <Select value={String(year)} onChange={(e) => setYear(Number(e.target.value))} className="w-24">
+          {[year - 1, year, year + 1].map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </Select>
       </div>
 
       {!records || records.length === 0 ? (
@@ -150,39 +175,38 @@ export default function PayrollPage() {
       ) : (
         <div className="rounded-lg border">
           <div className="hidden sm:block">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-start text-sm font-medium">Employee</th>
-                  <th className="px-4 py-3 text-end text-sm font-medium">Base Salary</th>
-                  <th className="px-4 py-3 text-end text-sm font-medium">Deductions</th>
-                  <th className="px-4 py-3 text-end text-sm font-medium">Additions</th>
-                  <th className="px-4 py-3 text-end text-sm font-medium">Net Salary</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium">Status</th>
-                  <th className="px-4 py-3 text-end text-sm font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead className="text-end">Base Salary</TableHead>
+                  <TableHead className="text-end">Deductions</TableHead>
+                  <TableHead className="text-end">Additions</TableHead>
+                  <TableHead className="text-end">Net Salary</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-end">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {records.map((r, i) => (
                   <motion.tr
                     key={r.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
-                    className="border-b last:border-0 hover:bg-muted/30"
                   >
-                    <td className="px-4 py-3 text-sm font-medium">
+                    <TableCell className="font-medium">
                       {r.employee.name}
                       <span className="block text-xs text-muted-foreground">{r.employee.department?.name}</span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-end font-mono">{formatCurrency(r.baseSalary)}</td>
-                    <td className="px-4 py-3 text-sm text-end font-mono text-destructive">{formatCurrency(r.totalDeductions)}</td>
-                    <td className="px-4 py-3 text-sm text-end font-mono text-emerald-600">{formatCurrency(r.totalIncentives + r.totalBonuses)}</td>
-                    <td className="px-4 py-3 text-sm text-end font-mono font-bold">{formatCurrency(r.netSalary)}</td>
-                    <td className="px-4 py-3 text-center">
+                    </TableCell>
+                    <TableCell className="text-end font-mono">{formatCurrency(r.baseSalary)}</TableCell>
+                    <TableCell className="text-end font-mono text-destructive">{formatCurrency(r.totalDeductions)}</TableCell>
+                    <TableCell className="text-end font-mono text-emerald-600">{formatCurrency(r.totalIncentives + r.totalBonuses)}</TableCell>
+                    <TableCell className="text-end font-mono font-bold">{formatCurrency(r.netSalary)}</TableCell>
+                    <TableCell className="text-center">
                       <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-end">
+                    </TableCell>
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-1">
                         <Link href={`/salary/payroll/${r.id}`}>
                           <Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button>
@@ -198,11 +222,11 @@ export default function PayrollPage() {
                           </>
                         )}
                       </div>
-                    </td>
+                    </TableCell>
                   </motion.tr>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <div className="grid gap-4 p-4 sm:hidden">
             {records.map((r, i) => (
@@ -308,3 +332,4 @@ export default function PayrollPage() {
     </div>
   );
 }
+

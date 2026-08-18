@@ -3,8 +3,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  --font-sans: var(--font-sans-var), 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display-var), 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: var(--font-mono-var), 'IBM Plex Mono', ui-monospace, monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -21,63 +27,168 @@
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-muted: var(--sidebar-muted);
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 }
 
 :root {
-  --background: #faf9f6;
-  --foreground: #1a1a2e;
-  --primary: #6366f1;
+  --background: #eceef2;
+  --foreground: #141824;
+  --card: #ffffff;
+  --card-foreground: #141824;
+  --primary: #4756d7;
   --primary-foreground: #ffffff;
-  --secondary: #e8e4f0;
-  --secondary-foreground: #1a1a2e;
-  --muted: #f1f0f5;
-  --muted-foreground: #6b6b80;
-  --accent: #a78bfa;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
+  --secondary: #eef0f5;
+  --secondary-foreground: #1c2333;
+  --muted: #f0f1f5;
+  --muted-foreground: #5b6474;
+  --accent: #eceef4;
+  --accent-foreground: #1c2333;
+  --destructive: #dc3a3a;
   --destructive-foreground: #ffffff;
-  --border: #e2e0e8;
-  --input: #e2e0e8;
-  --ring: #6366f1;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-muted: #f1f0f5;
+  --border: #dfe2e9;
+  --input: #d6d9e2;
+  --ring: #5d6ed9;
+  --sidebar: #0e1420;
+  --sidebar-foreground: #e6e9f1;
+  --sidebar-muted: #171f30;
 }
 
 .dark {
-  --background: #0f0f1a;
-  --foreground: #e8e4f0;
-  --primary: #818cf8;
-  --primary-foreground: #0f0f1a;
-  --secondary: #1e1b2e;
-  --secondary-foreground: #e8e4f0;
-  --muted: #1a1a2e;
-  --muted-foreground: #9d9bb5;
-  --accent: #a78bfa;
-  --accent-foreground: #0f0f1a;
-  --destructive: #f87171;
-  --destructive-foreground: #0f0f1a;
-  --border: #2a2740;
-  --input: #2a2740;
-  --ring: #818cf8;
-  --sidebar: #14142a;
-  --sidebar-foreground: #e8e4f0;
-  --sidebar-muted: #1e1b2e;
+  --background: #0c1019;
+  --foreground: #e7eaf3;
+  --card: #141a26;
+  --card-foreground: #e7eaf3;
+  --primary: #7c89f0;
+  --primary-foreground: #ffffff;
+  --secondary: #1c2434;
+  --secondary-foreground: #e7eaf3;
+  --muted: #192130;
+  --muted-foreground: #8a93a6;
+  --accent: #1c2434;
+  --accent-foreground: #e7eaf3;
+  --destructive: #f05454;
+  --destructive-foreground: #ffffff;
+  --border: #232b3b;
+  --input: #2b3446;
+  --ring: #7c89f0;
+  --sidebar: #0a0e17;
+  --sidebar-foreground: #e7eaf3;
+  --sidebar-muted: #151c2b;
 }
 
 * {
   border-color: var(--border);
 }
 
+html {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans-var), 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display-var), 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono-var), 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* Slim, subtle scrollbars */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--muted-foreground) 60%, transparent);
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+}
+
+/* Enterprise data-table styling */
+@layer components {
+  .data-table-wrap {
+    @apply overflow-x-auto rounded-xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)];
+  }
+
+  .data-table-wrap table {
+    @apply w-full text-[13px];
+  }
+
+  .data-table-wrap thead th {
+    @apply whitespace-nowrap border-b border-border bg-muted/60 px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .data-table-wrap tbody td {
+    @apply whitespace-nowrap border-b border-border px-3 py-2 align-middle text-[13px] last:border-b-0;
+  }
+
+  .data-table-wrap tbody tr {
+    @apply transition-colors hover:bg-muted/40;
+  }
+
+  .data-table-wrap tbody tr:last-child td {
+    @apply border-b-0;
+  }
+}
+
+/* Recharts theming */
+.recharts-cartesian-axis-tick text {
+  font-family: var(--font-sans-var), 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  fill: var(--muted-foreground);
+}
+
+/* Brand-aware chart gradient stops */
+.chart-grad-a {
+  stop-color: var(--primary);
+}
+
+.chart-grad-b {
+  stop-color: color-mix(in srgb, var(--primary) 62%, white);
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--border);
+  stroke-opacity: 1;
+}
+
+.recharts-legend-item-text {
+  font-family: var(--font-sans-var), 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.recharts-legend-item {
+  margin-right: 12px !important;
+}
+
+.recharts-surface {
+  outline: none;
 }

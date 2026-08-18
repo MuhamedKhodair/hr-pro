@@ -3,6 +3,19 @@
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 
+export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/80">HR Pro / {title}</p>
+        <h1 className="mt-1 font-display text-[26px] font-semibold leading-tight">{title}</h1>
+        {description && <p className="mt-1 text-[13px] text-muted-foreground">{description}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="space-y-3">

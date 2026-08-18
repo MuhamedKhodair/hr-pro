@@ -1,7 +1,8 @@
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartTooltip } from '@/components/dashboard/chart-tooltip';
 
 interface AttendanceChartProps {
   data: { date: string; status: string }[];
@@ -26,19 +27,20 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Attendance (Last 30 Days)</CardTitle>
+        <CardTitle className="text-sm font-semibold">Attendance (Last 30 Days)</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-              <Tooltip />
-              <Bar dataKey="Present" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Absent" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="HalfDay" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+            <BarChart data={chartData} barSize={14}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
+              <Tooltip cursor={{ fill: 'var(--muted)', opacity: 0.5 }} content={<ChartTooltip />} />
+              <Legend iconType="circle" iconSize={8} verticalAlign="top" height={32} />
+              <Bar dataKey="Present" fill="#10b981" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Absent" fill="#f05454" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="HalfDay" fill="#f59e0b" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

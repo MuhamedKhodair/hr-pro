@@ -13,6 +13,20 @@ export async function getAll() {
   return prisma.department.findMany({ include: { _count: { select: { employees: true } } }, orderBy: { name: 'asc' } });
 }
 
+export async function getAllPaginated(options: { page: number; pageSize: number }) {
+  const { page, pageSize } = options;
+  const [data, total] = await Promise.all([
+    prisma.department.findMany({
+      include: { _count: { select: { employees: true } } },
+      orderBy: { name: 'asc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.department.count(),
+  ]);
+  return { data, pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
+}
+
 export async function getById(id: string) {
   const dept = await prisma.department.findUnique({ where: { id }, include: { _count: { select: { employees: true } } } });
   if (!dept) throw new AppError(404, 'Department not found');

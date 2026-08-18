@@ -3,12 +3,12 @@
 import { forwardRef, HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-const Dialog = ({ children, open, onOpenChange }: { children: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => {
+const Dialog = ({ children, open, onOpenChange, className }: { children: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void; className?: string }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => onOpenChange?.(false)} />
-      <div className="relative z-50 w-full max-w-lg rounded-xl border bg-background p-6 shadow-lg">
+      <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-[2px]" onClick={() => onOpenChange?.(false)} />
+      <div className={cn('relative z-50 w-full max-w-lg rounded-lg border bg-card p-6 text-card-foreground shadow-xl', className)}>
         {children}
       </div>
     </div>

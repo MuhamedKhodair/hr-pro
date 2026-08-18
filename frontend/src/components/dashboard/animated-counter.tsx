@@ -37,7 +37,7 @@ export function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1.
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="text-3xl font-bold"
+      className="text-3xl font-bold tabular-nums tracking-tight"
     >
       {prefix}{display.toLocaleString()}{suffix}
     </motion.span>

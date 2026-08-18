@@ -1,35 +1,30 @@
 import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import authRoutes from './routes/auth.routes';
-import employeeRoutes from './routes/employee.routes';
-import departmentRoutes from './routes/department.routes';
-import attendanceRoutes from './routes/attendance.routes';
-import leaveRoutes from './routes/leave.routes';
-import dashboardRoutes from './routes/dashboard.routes';
-import salaryRoutes from './routes/salary.routes';
-import { errorHandler } from './middleware/errorHandler';
+import { app } from './app';
+import { checkSecretConfig } from './lib/secrets';
+import { attachWebSocket } from './lib/ws';
+import { startCron } from './lib/cron';
 
-const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
-app.use(express.json());
+const secretProblems = checkSecretConfig();
+if (process.env.NODE_ENV === 'production') {
+  if (secretProblems.length > 0) {
+    console.error('Refusing to start in production:');
+    secretProblems.forEach((p) => console.error(`  - ${p}`));
+    process.exit(1);
+  }
+} else if (secretProblems.length > 0) {
+  console.warn('[secrets] Weak configuration detected (development only):');
+  secretProblems.forEach((p) => console.warn(`  - ${p}`));
+}
 
-app.get('/api/health', (_req, res) => {
-  res.json({ success: true, data: { status: 'ok' } });
-});
-
-app.use('/api/auth', authRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/departments', departmentRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/leaves', leaveRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/salary', salaryRoutes);
-
-app.use(errorHandler);
-
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  if (process.env.NODE_ENV !== 'test') {
+    startCron();
+    console.log('[cron] Scheduler started');
+  }
 });
+
+attachWebSocket(server);
+console.log('[ws] WebSocket server attached at /ws');

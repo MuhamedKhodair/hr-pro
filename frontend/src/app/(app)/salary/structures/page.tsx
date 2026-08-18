@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { useRequireRole } from '@/hooks/useRequireRole';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
@@ -65,6 +67,7 @@ const typeOptions = [
 ];
 
 export default function SalaryStructuresPage() {
+  useRequireRole(['Admin']);
   const { addToast } = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -301,3 +304,4 @@ export default function SalaryStructuresPage() {
     </div>
   );
 }
+

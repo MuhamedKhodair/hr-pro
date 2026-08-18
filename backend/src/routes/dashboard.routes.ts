@@ -6,5 +6,8 @@ const router = Router();
 
 router.use(authenticate);
 router.get('/stats', dashboardController.getStats);
+router.get('/headcount', dashboardController.getHeadcount);
+router.get('/upcoming', dashboardController.getUpcoming);
+router.get('/activity', dashboardController.getActivity);
 
 export default router;

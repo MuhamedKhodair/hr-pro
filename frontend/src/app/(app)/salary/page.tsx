@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { useRequireRole } from '@/hooks/useRequireRole';
+
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, Gift, Wallet, TrendingUp, Building2, ArrowRight, Plus, Calculator } from 'lucide-react';
@@ -12,6 +14,7 @@ import { useApiGet } from '@/hooks/useApi';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { AnimatedCounter } from '@/components/dashboard/animated-counter';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
+import { ChartTooltip } from '@/components/dashboard/chart-tooltip';
 
 interface DeptBreakdown {
   name: string;
@@ -69,6 +72,7 @@ function StatsCard({ title, value, icon: Icon, description, index }: {
 }
 
 export default function SalaryDashboardPage() {
+  useRequireRole(['Admin']);
   const { t } = useTranslation();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -87,8 +91,8 @@ export default function SalaryDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{t('Salary Management')}</h1>
-          <p className="text-muted-foreground">{t('Payroll overview and administration')}</p>
+          <h1 className="font-display text-[26px] font-semibold leading-tight tracking-tight">{t('Salary Management')}</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">{t('Payroll overview and administration')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={String(month)} onChange={(e) => setMonth(Number(e.target.value))} className="w-28">
@@ -121,12 +125,18 @@ export default function SalaryDashboardPage() {
           <CardContent>
             {summary?.deptBreakdown && summary.deptBreakdown.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={summary.deptBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" className="text-xs" />
-                  <YAxis className="text-xs" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <BarChart data={summary.deptBreakdown} barSize={26}>
+                  <defs>
+                    <linearGradient id="salaryBarGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" className="chart-grad-a" />
+                      <stop offset="100%" className="chart-grad-b" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: 'var(--muted)', opacity: 0.5 }} content={<ChartTooltip formatter={(v) => `$${Number(v).toLocaleString()}`} />} />
+                  <Bar dataKey="total" fill="url(#salaryBarGrad)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -144,13 +154,13 @@ export default function SalaryDashboardPage() {
             {trend && trend.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={trend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                  <Legend />
-                  <Line type="monotone" dataKey="totalPayroll" stroke="hsl(var(--primary))" name="Total Payroll" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="avgSalary" stroke="hsl(var(--chart-2))" name="Avg Salary" strokeWidth={2} dot={{ r: 3 }} />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} />
+                  <Tooltip content={<ChartTooltip formatter={(v) => `$${Number(v).toLocaleString()}`} />} />
+                  <Legend iconType="circle" iconSize={8} verticalAlign="top" height={36} />
+                  <Line type="monotone" dataKey="totalPayroll" stroke="var(--primary)" strokeWidth={2.5} name="Total Payroll" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--card)' }} />
+                  <Line type="monotone" dataKey="avgSalary" stroke="#8b94c9" strokeWidth={2} strokeDasharray="5 4" name="Avg Salary" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--card)' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -208,8 +218,8 @@ export default function SalaryDashboardPage() {
                     <Gift className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-medium">Incentives & Bonuses</p>
-                    <p className="text-xs text-muted-foreground">Manage components</p>
+                    <p className="font-medium">Components & Allowances</p>
+                    <p className="text-xs text-muted-foreground">Bonuses, incentives, deductions</p>
                   </div>
                 </div>
                 <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -221,3 +231,4 @@ export default function SalaryDashboardPage() {
     </div>
   );
 }
+

@@ -10,26 +10,49 @@ interface LoginData {
 }
 
 interface AuthResponse {
-  user: { id: string; email: string; role: string; employeeId: string | null };
+  user: { id: string; email: string; role: string; employeeId: string | null; mustChangePassword?: boolean; twoFactorEnabled?: boolean };
   accessToken: string;
   refreshToken: string;
+  needsTwoFactor?: boolean;
+  twoFactorToken?: string;
 }
 
 export async function login(data: LoginData) {
   const res = await api.post<AuthResponse>('/auth/login', data);
-  if (res.data) {
-    localStorage.setItem('token', res.data.accessToken);
-    localStorage.setItem('refreshToken', res.data.refreshToken);
+  if (res.data?.user) {
+    // Tokens live in HttpOnly cookies; only the user profile is cached here.
+    localStorage.setItem('user', JSON.stringify(res.data.user));
+  }
+  return res.data;
+}
+
+export async function twoFactorLogin(twoFactorToken: string, code: string) {
+  const res = await api.post<AuthResponse>('/auth/2fa/verify-login', { twoFactorToken, code });
+  if (res.data?.user) {
     localStorage.setItem('user', JSON.stringify(res.data.user));
   }
   return res.data;
 }
 
 export function logout() {
+  api
+    .post('/auth/logout')
+    .catch(() => undefined)
+    .finally(() => clearSession());
+}
+
+function clearSession() {
   localStorage.removeItem('token');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
   window.location.href = '/login';
+}
+
+export function markPasswordChanged() {
+  const user = getUser();
+  if (!user) return;
+  user.mustChangePassword = false;
+  localStorage.setItem('user', JSON.stringify(user));
 }
 
 export function getUser() {
@@ -38,13 +61,12 @@ export function getUser() {
   return user ? JSON.parse(user) : null;
 }
 
-export function getToken() {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
-}
-
 export function isAdminOrHr(): boolean {
   const user = getUser();
   if (!user) return false;
   return user.role === 'Admin' || user.role === 'HR';
+}
+
+export function getHomePath(user = getUser()) {
+  return user?.role === 'Employee' ? '/me' : '/dashboard';
 }

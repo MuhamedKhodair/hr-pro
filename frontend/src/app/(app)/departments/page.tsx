@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/toast';
 import { useApiGet, useApiPost, useApiPut, useApiDelete } from '@/hooks/useApi';
 import { isAdminOrHr } from '@/lib/auth';
 import { departmentSchema } from '@/lib/validations';
-import { TableSkeleton, EmptyState, ErrorState } from '@/components/tables/data-table';
+import { TableSkeleton, EmptyState, ErrorState, PageHeader } from '@/components/tables/data-table';
 import { z } from 'zod';
 
 interface Department {
@@ -88,17 +88,17 @@ export default function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('Departments')}</h1>
-          <p className="text-muted-foreground">{t('Organize your company structure')}</p>
-        </div>
-        {canManage && (
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> {t('Add Department')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('Departments')}
+        description={t('Organize your company structure')}
+        actions={
+          canManage && (
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="h-4 w-4" /> {t('Add Department')}
+            </Button>
+          )
+        }
+      />
 
       {!departments || departments.length === 0 ? (
         <EmptyState icon={Building2} title={t('No departments')} description={t('Create your first department.')} />

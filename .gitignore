@@ -23,6 +23,16 @@ pnpm-debug.log*
 backend/prisma/*.db
 backend/prisma/*.db-journal
 
+# Database backups
+backend/backups/
+
+# User-uploaded content (leave attachments, brand assets)
+backend/uploads/
+
+# Local build artifacts
+frontend/tsconfig.tsbuildinfo
+backend/tsconfig.tsbuildinfo
+
 # OS / editor
 .DS_Store
 Thumbs.db

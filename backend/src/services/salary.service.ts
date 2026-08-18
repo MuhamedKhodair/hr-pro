@@ -1,6 +1,8 @@
 import prisma from '../lib/prisma';
 import { AppError } from '../lib/errors';
 import { z } from 'zod';
+import { queueEmail } from '../lib/email';
+import { payrollReadyEmail } from '../lib/emailTemplates';
 
 export const createSalaryStructureSchema = z.object({
   employeeId: z.string().min(1),
@@ -35,25 +37,27 @@ export async function createOrUpdateSalaryStructure(data: z.infer<typeof createS
 
   const effectiveFrom = new Date(data.effectiveFrom);
 
-  const latest = await prisma.salaryStructure.findFirst({
-    where: { employeeId: data.employeeId, effectiveTo: null },
-    orderBy: { effectiveFrom: 'desc' },
-  });
-
-  if (latest) {
-    await prisma.salaryStructure.update({
-      where: { id: latest.id },
-      data: { effectiveTo: effectiveFrom },
+  return prisma.$transaction(async (tx) => {
+    const latest = await tx.salaryStructure.findFirst({
+      where: { employeeId: data.employeeId, effectiveTo: null },
+      orderBy: { effectiveFrom: 'desc' },
     });
-  }
 
-  return prisma.salaryStructure.create({
-    data: {
-      employeeId: data.employeeId,
-      baseSalary: data.baseSalary,
-      effectiveFrom,
-    },
-    include: { employee: { select: { id: true, name: true, email: true } } },
+    if (latest) {
+      await tx.salaryStructure.update({
+        where: { id: latest.id },
+        data: { effectiveTo: effectiveFrom },
+      });
+    }
+
+    return tx.salaryStructure.create({
+      data: {
+        employeeId: data.employeeId,
+        baseSalary: data.baseSalary,
+        effectiveFrom,
+      },
+      include: { employee: { select: { id: true, name: true, email: true } } },
+    });
   });
 }
 
@@ -122,8 +126,16 @@ export async function previewPayroll(employeeId: string, month: number, year: nu
   });
   if (!structure) throw new AppError(400, 'No active salary structure');
 
+  const [settings] = await Promise.all([
+    prisma.setting.findUnique({ where: { id: 'singleton' } }),
+  ]);
+  const lateThresholdMinutes = settings?.lateThresholdMinutes ?? 15;
+  const standardWorkHours = settings?.standardWorkHours ?? 8;
+  const overtimeRateMultiplier = settings?.overtimeRateMultiplier ?? 1.5;
+
   const daysInMonth = getDaysInMonth(month, year);
   const dailyRate = structure.baseSalary / daysInMonth;
+  const hourlyRate = dailyRate / standardWorkHours;
 
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -139,10 +151,17 @@ export async function previewPayroll(employeeId: string, month: number, year: nu
   const halfDays = attendance.filter((a) => a.status === 'HalfDay').length;
   const lateDays = attendance.filter((a) => {
     if (!a.checkIn) return false;
-    const hour = a.checkIn.getHours();
-    const minutes = a.checkIn.getMinutes();
-    return hour > 9 || (hour === 9 && minutes > 15);
+    const minutes = a.checkIn.getHours() * 60 + a.checkIn.getMinutes();
+    return minutes > 9 * 60 + lateThresholdMinutes;
   }).length;
+
+  let overtimePay = 0;
+  for (const a of attendance) {
+    if (a.status !== 'Present' || !a.checkIn || !a.checkOut) continue;
+    const hours = (a.checkOut.getTime() - a.checkIn.getTime()) / 3_600_000;
+    const overtimeHours = Math.max(0, hours - standardWorkHours);
+    overtimePay += overtimeHours * hourlyRate * overtimeRateMultiplier;
+  }
 
   const workingDays = attendance.length;
   const absentDayDeduction = absentDays * dailyRate;
@@ -168,8 +187,8 @@ export async function previewPayroll(employeeId: string, month: number, year: nu
     .reduce((sum, c) => sum + c.amount, 0);
 
   const totalDeductions = attendanceDeduction + manualDeductions;
-  const totalAdditions = incentives + bonuses + allowances;
-  const netSalary = structure.baseSalary - totalDeductions + totalAdditions;
+  const totalAdditions = incentives + bonuses + allowances + overtimePay;
+  const netSalary = Math.max(0, structure.baseSalary - totalDeductions + totalAdditions);
 
   return {
     employeeId,
@@ -179,6 +198,8 @@ export async function previewPayroll(employeeId: string, month: number, year: nu
     absentDays,
     halfDays,
     lateDays,
+    overtimeHours: Math.round(overtimePay / (hourlyRate * overtimeRateMultiplier) * 100) / 100,
+    overtimePay: Math.round(overtimePay * 100) / 100,
     dailyRate,
     attendanceDeduction,
     manualDeductions,
@@ -202,54 +223,87 @@ export async function generatePayroll(
   year: number,
   generatedBy: string,
 ) {
-  const results: any[] = [];
+  const createdEmails: { email: string; name: string; netSalary: number }[] = [];
 
-  for (const employeeId of employeeIds) {
-    const existing = await prisma.payrollRecord.findUnique({
-      where: { employeeId_month_year: { employeeId, month, year } },
-    });
-    if (existing) {
-      results.push({ employeeId, skipped: true, reason: 'Payroll already exists' });
-      continue;
-    }
+  const results = await prisma.$transaction(
+    async (tx) => {
+      const items: any[] = [];
 
-    try {
-      const preview = await previewPayroll(employeeId, month, year);
+      for (const employeeId of employeeIds) {
+        const existing = await tx.payrollRecord.findUnique({
+          where: { employeeId_month_year: { employeeId, month, year } },
+        });
+        if (existing) {
+          items.push({ employeeId, skipped: true, reason: 'Payroll already exists' });
+          continue;
+        }
 
-      const activeComponents = await prisma.salaryComponent.findMany({
-        where: { employeeId, endedAt: null },
+        try {
+          const preview = await previewPayroll(employeeId, month, year);
+
+          const activeComponents = await tx.salaryComponent.findMany({
+            where: { employeeId, endedAt: null },
+          });
+
+          const record = await tx.payrollRecord.create({
+            data: {
+              employeeId,
+              month,
+              year,
+              baseSalary: preview.baseSalary,
+              totalDeductions: preview.totalDeductions,
+              totalIncentives: preview.incentives,
+              totalBonuses: preview.bonuses,
+              netSalary: preview.netSalary,
+              status: 'DRAFT',
+              generatedAt: new Date(),
+              generatedBy,
+              components: {
+                create: activeComponents.map((c) => ({
+                  type: c.type,
+                  label: c.label,
+                  amount: c.amount,
+                })),
+              },
+            },
+            include: {
+              employee: { select: { id: true, name: true, email: true, departmentId: true } },
+              components: true,
+            },
+          });
+
+          if (record.employee.email) {
+            createdEmails.push({
+              email: record.employee.email,
+              name: record.employee.name,
+              netSalary: record.netSalary,
+            });
+          }
+
+          items.push({ employeeId, payrollRecordId: record.id, netSalary: record.netSalary });
+        } catch (err: any) {
+          items.push({ employeeId, error: err.message });
+        }
+      }
+
+      return items;
+    },
+    { timeout: 30000 },
+  );
+
+  // Notify employees whose payslip was generated (best-effort, non-blocking).
+  if (createdEmails.length > 0) {
+    const monthName = new Date(Date.UTC(year, month - 1, 1)).toLocaleString('en-US', { month: 'long' });
+    const setting = await prisma.setting.findUnique({ where: { id: 'singleton' } });
+    const currency = setting?.currencySymbol || '$';
+    for (const e of createdEmails) {
+      const email = payrollReadyEmail({
+        employeeName: e.name,
+        periodLabel: `${monthName} ${year}`,
+        netSalary: e.netSalary.toLocaleString(),
+        currency,
       });
-
-      const record = await prisma.payrollRecord.create({
-        data: {
-          employeeId,
-          month,
-          year,
-          baseSalary: preview.baseSalary,
-          totalDeductions: preview.totalDeductions,
-          totalIncentives: preview.incentives,
-          totalBonuses: preview.bonuses,
-          netSalary: preview.netSalary,
-          status: 'DRAFT',
-          generatedAt: new Date(),
-          generatedBy,
-          components: {
-            create: activeComponents.map((c) => ({
-              type: c.type,
-              label: c.label,
-              amount: c.amount,
-            })),
-          },
-        },
-        include: {
-          employee: { select: { id: true, name: true, email: true, departmentId: true } },
-          components: true,
-        },
-      });
-
-      results.push({ employeeId, payrollRecordId: record.id, netSalary: record.netSalary });
-    } catch (err: any) {
-      results.push({ employeeId, error: err.message });
+      queueEmail({ to: e.email, subject: email.subject, html: email.html }).catch(() => {});
     }
   }
 
@@ -325,6 +379,25 @@ export async function finalizePayroll(id: string, finalizedBy: string) {
   });
 }
 
+export async function markPayrollPaid(id: string, paidBy: string) {
+  const record = await prisma.payrollRecord.findUnique({ where: { id } });
+  if (!record) throw new AppError(404, 'Payroll record not found');
+  if (record.status !== 'FINALIZED') throw new AppError(400, 'Payroll must be FINALIZED before it can be marked as paid');
+
+  return prisma.payrollRecord.update({
+    where: { id },
+    data: {
+      status: 'PAID',
+      paidAt: new Date(),
+      paidBy,
+    },
+    include: {
+      employee: { select: { id: true, name: true, email: true } },
+      components: true,
+    },
+  });
+}
+
 export async function getPayrollSummary(month: number, year: number) {
   const records = await prisma.payrollRecord.findMany({
     where: { month, year },
@@ -376,6 +449,18 @@ export async function getPayrollSummary(month: number, year: number) {
   };
 }
 
+export async function getOwnPayrollRecord(employeeId: string, recordId: string) {
+  const record = await prisma.payrollRecord.findFirst({
+    where: { id: recordId, employeeId, status: { in: ['FINALIZED', 'PAID'] } },
+    include: {
+      employee: { select: { id: true, name: true, email: true, department: { select: { name: true } } } },
+      components: true,
+    },
+  });
+  if (!record) throw new AppError(404, 'Payslip not found');
+  return record;
+}
+
 export async function listPayrollRecords(month?: number, year?: number, employeeId?: string) {
   const where: any = {};
   if (month) where.month = month;
@@ -390,6 +475,37 @@ export async function listPayrollRecords(month?: number, year?: number, employee
     },
     orderBy: [{ year: 'desc' }, { month: 'desc' }, { employee: { name: 'asc' } }],
   });
+}
+
+export async function listPayrollRecordsPaginated(options: {
+  page: number;
+  pageSize: number;
+  month?: number;
+  year?: number;
+  employeeId?: string;
+  status?: string;
+}) {
+  const { page, pageSize, month, year, employeeId, status } = options;
+  const where: any = {};
+  if (month) where.month = month;
+  if (year) where.year = year;
+  if (employeeId) where.employeeId = employeeId;
+  if (status) where.status = status;
+
+  const [data, total] = await Promise.all([
+    prisma.payrollRecord.findMany({
+      where,
+      include: {
+        employee: { select: { id: true, name: true, department: { select: { name: true } } } },
+        components: true,
+      },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }, { employee: { name: 'asc' } }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.payrollRecord.count({ where }),
+  ]);
+  return { data, pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
 }
 
 export async function getAllSalaryStructures() {

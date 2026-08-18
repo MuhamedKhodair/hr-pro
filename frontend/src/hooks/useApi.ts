@@ -16,7 +16,7 @@ export function useApiGet<T>(key: string[], endpoint: string | null, options?: {
   });
 }
 
-export function useApiPost<TResponse>(invalidateKeys?: string[][]) {
+export function useApiPost<TResponse>(invalidateKeys?: (string | number)[][]) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ endpoint, data }: { endpoint: string; data: unknown }) => {
@@ -27,7 +27,7 @@ export function useApiPost<TResponse>(invalidateKeys?: string[][]) {
   });
 }
 
-export function useApiPut<TResponse>(invalidateKeys?: string[][]) {
+export function useApiPut<TResponse>(invalidateKeys?: (string | number)[][]) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ endpoint, data }: { endpoint: string; data: unknown }) => {
@@ -38,7 +38,7 @@ export function useApiPut<TResponse>(invalidateKeys?: string[][]) {
   });
 }
 
-export function useApiPatch<TResponse>(invalidateKeys?: string[][]) {
+export function useApiPatch<TResponse>(invalidateKeys?: (string | number)[][]) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ endpoint, data }: { endpoint: string; data: unknown }) => {
@@ -49,7 +49,7 @@ export function useApiPatch<TResponse>(invalidateKeys?: string[][]) {
   });
 }
 
-export function useApiDelete(invalidateKeys?: string[][]) {
+export function useApiDelete(invalidateKeys?: (string | number)[][]) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (endpoint: string) => {

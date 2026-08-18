@@ -5,6 +5,8 @@ import { authenticate, authorize } from '../middleware/auth';
 const router = Router();
 
 router.use(authenticate);
+router.get('/payroll/mine', salaryController.myPayroll);
+router.get('/payroll/mine/:id', salaryController.myPayrollDetail);
 router.use(authorize('Admin'));
 
 router.get('/employees', salaryController.getEmployees);
@@ -23,10 +25,13 @@ router.post('/payroll/generate', salaryController.generatePayroll);
 router.get('/payroll/preview', salaryController.previewPayroll);
 router.get('/payroll/summary', salaryController.getPayrollSummary);
 router.get('/payroll/trend', salaryController.getPayrollTrend);
+router.get('/payroll/export/csv', salaryController.exportPayrollCsv);
+router.get('/payroll/export/xlsx', salaryController.exportPayrollExcel);
 router.get('/payroll', salaryController.listPayrolls);
 router.get('/payroll/:employeeId/:month/:year', salaryController.getPayroll);
 router.get('/payroll/:id', salaryController.getPayrollById);
 router.patch('/payroll/:id', salaryController.adjustPayroll);
 router.post('/payroll/:id/finalize', salaryController.finalizePayroll);
+router.post('/payroll/:id/mark-paid', salaryController.markPayrollPaid);
 
 export default router;

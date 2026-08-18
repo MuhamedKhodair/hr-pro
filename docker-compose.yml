@@ -1,19 +1,27 @@
 services:
-  # PostgreSQL is optional. By default the project uses SQLite.
-  # Uncomment below and set DATABASE_URL in backend/.env to use PostgreSQL:
-  # DATABASE_URL="postgresql://hrproj:hrproj_secret@localhost:5432/hrproj"
+  # PostgreSQL container for production-like runs.
   #
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: hrproj-db
-  #   ports:
-  #     - '5432:5432'
-  #   environment:
-  #     POSTGRES_USER: hrproj
-  #     POSTGRES_PASSWORD: hrproj_secret
-  #     POSTGRES_DB: hrproj
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
+  # The project defaults to SQLite (zero-config). To use this database:
+  #   1. Change the Prisma `provider` in backend/prisma/schema.prisma to "postgresql"
+  #   2. Set backend/.env DATABASE_URL="postgresql://hrproj:hrproj_secret@localhost:5432/hrproj"
+  #   3. Run `npx prisma migrate dev` (in backend/) then `npx prisma db seed`
   #
-  # volumes:
-  #   pgdata:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hrproj-db
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: hrproj
+      POSTGRES_PASSWORD: hrproj_secret
+      POSTGRES_DB: hrproj
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hrproj -d hrproj']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
