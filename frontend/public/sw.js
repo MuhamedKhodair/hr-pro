@@ -1,6 +1,6 @@
-const CACHE_NAME = 'hr-pro-shell-v1';
+const CACHE_NAME = 'hr-pro-shell-v2';
 
-const SHELL = ['/', '/clock', '/dashboard', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
+const SHELL = ['/', '/clock', '/attendance', '/dashboard', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
