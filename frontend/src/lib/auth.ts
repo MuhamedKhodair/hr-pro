@@ -61,6 +61,11 @@ export function getUser() {
   return user ? JSON.parse(user) : null;
 }
 
+export function setUser(user: unknown) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('user', JSON.stringify(user));
+}
+
 export function isAdminOrHr(): boolean {
   const user = getUser();
   if (!user) return false;
