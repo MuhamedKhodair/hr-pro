@@ -2,7 +2,7 @@
   "name": "HR Pro — HR Management System",
   "short_name": "HR Pro",
   "description": "Employees, attendance, leave, payroll and audit — managed from a single console.",
-  "start_url": "/dashboard",
+  "start_url": "/clock",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

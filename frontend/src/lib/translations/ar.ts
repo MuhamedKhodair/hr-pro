@@ -666,6 +666,14 @@ const ar: Record<string, string> = {
   'No holidays scheduled': 'لا توجد عطلات مجدولة',
   'Holidays will appear here once they are set.': 'ستظهر العطلات هنا بمجرد إضافتها.',
   'Notifications': 'الإشعارات',
+  'Clock In/Out': 'تسجيل الحضور',
+  'Checked in at': 'سجَّلت الدخول في',
+  'Checked out at': 'سجَّلت الخروج في',
+  'Day complete': 'اكتمل يومك',
+  'Not checked in yet': 'لم تسجِّل الدخول بعد',
+  'Working now': 'في العمل الآن',
+  'Install App': 'تثبيت التطبيق',
+  'Retry': 'إعادة المحاولة',
 };
 
 export default ar;

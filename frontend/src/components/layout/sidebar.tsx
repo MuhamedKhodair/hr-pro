@@ -24,6 +24,7 @@ import {
   ClipboardList,
   Bell,
   Sun,
+  Clock3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,6 +55,7 @@ const navSections: NavSection[] = [
     labelKey: 'Overview',
     items: [
       { href: '/dashboard', labelKey: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'HR'] },
+      { href: '/clock', labelKey: 'Clock In/Out', icon: Clock3, roles: ['Admin', 'HR', 'Employee'] },
       { href: '/me', labelKey: 'My Profile', icon: UserCircle2, roles: ['Admin', 'HR', 'Employee'] },
       { href: '/me/shift', labelKey: 'My Shift', icon: CalendarRange, roles: ['Admin', 'HR', 'Employee'] },
       { href: '/me/onboarding', labelKey: 'My Onboarding', icon: ClipboardList, roles: ['Admin', 'HR', 'Employee'] },

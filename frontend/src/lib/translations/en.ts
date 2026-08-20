@@ -666,6 +666,14 @@ const en: Record<string, string> = {
   'No holidays scheduled': 'No holidays scheduled',
   'Holidays will appear here once they are set.': 'Holidays will appear here once they are set.',
   'Notifications': 'Notifications',
+  'Clock In/Out': 'Clock In/Out',
+  'Checked in at': 'Checked in at',
+  'Checked out at': 'Checked out at',
+  'Day complete': 'Day complete',
+  'Not checked in yet': 'Not checked in yet',
+  'Working now': 'Working now',
+  'Install App': 'Install App',
+  'Retry': 'Retry',
 };
 
 export default en;
