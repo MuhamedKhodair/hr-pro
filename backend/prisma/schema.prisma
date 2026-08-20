@@ -218,6 +218,8 @@ model Attendance {
   status      AttendanceStatus @default(Present)
   notes       String?
   overtimeHrs Float            @default(0)
+  latitude    Float?
+  longitude   Float?
   employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt

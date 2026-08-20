@@ -674,6 +674,12 @@ const ar: Record<string, string> = {
   'Working now': 'في العمل الآن',
   'Install App': 'تثبيت التطبيق',
   'Retry': 'إعادة المحاولة',
+  'Location required for check-in': 'الموقع مطلوب لتسجيل الحضور',
+  'Getting your location…': 'جاري تحديد موقعك…',
+  'Location denied': 'تم رفض إذن الموقع',
+  'Location unavailable': 'الموقع غير متاح',
+  'Location not supported by this browser': 'المتصفح لا يدعم تحديد الموقع',
+  'Open in Maps': 'فتح في الخرائط',
 };
 
 export default ar;

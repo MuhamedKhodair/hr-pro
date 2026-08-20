@@ -24,15 +24,18 @@ export async function getToday(req: AuthRequest, res: Response, next: NextFuncti
 export async function checkIn(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     let employeeId: string | undefined;
+    let latitude: number | null | undefined;
+    let longitude: number | null | undefined;
     if (req.user?.role === 'Employee') {
       employeeId = req.user.employeeId ?? undefined;
+      ({ latitude, longitude } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
     } else {
-      ({ employeeId } = attendanceService.checkInSchema.parse(req.body));
+      ({ employeeId, latitude, longitude } = attendanceService.checkInSchema.parse(req.body));
     }
     if (!employeeId) {
       return res.status(400).json({ success: false, error: 'employeeId is required' });
     }
-    const record = await attendanceService.checkIn(employeeId);
+    const record = await attendanceService.checkIn(employeeId, { latitude, longitude });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     next(err);
@@ -42,15 +45,18 @@ export async function checkIn(req: AuthRequest, res: Response, next: NextFunctio
 export async function checkOut(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     let employeeId: string | undefined;
+    let latitude: number | null | undefined;
+    let longitude: number | null | undefined;
     if (req.user?.role === 'Employee') {
       employeeId = req.user.employeeId ?? undefined;
+      ({ latitude, longitude } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
     } else {
-      ({ employeeId } = attendanceService.checkInSchema.parse(req.body));
+      ({ employeeId, latitude, longitude } = attendanceService.checkInSchema.parse(req.body));
     }
     if (!employeeId) {
       return res.status(400).json({ success: false, error: 'employeeId is required' });
     }
-    const record = await attendanceService.checkOut(employeeId);
+    const record = await attendanceService.checkOut(employeeId, { latitude, longitude });
     res.json({ success: true, data: record });
   } catch (err) {
     next(err);

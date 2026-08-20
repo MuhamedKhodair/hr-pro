@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 export const checkInSchema = z.object({
   employeeId: z.string(),
+  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
 });
 
 export const manualEntrySchema = z.object({
@@ -65,7 +67,7 @@ export async function getDateRange(
   });
 }
 
-export async function checkIn(employeeId: string) {
+export async function checkIn(employeeId: string, location?: { latitude?: number | null; longitude?: number | null }) {
   const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
   if (!employee) throw new AppError(404, 'Employee not found');
 
@@ -81,11 +83,16 @@ export async function checkIn(employeeId: string) {
   if (existing) throw new AppError(409, 'Already checked in today');
 
   return prisma.attendance.create({
-    data: { employeeId, checkIn: new Date() },
+    data: {
+      employeeId,
+      checkIn: new Date(),
+      latitude: location?.latitude ?? null,
+      longitude: location?.longitude ?? null,
+    },
   });
 }
 
-export async function checkOut(employeeId: string) {
+export async function checkOut(employeeId: string, location?: { latitude?: number | null; longitude?: number | null }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -106,7 +113,12 @@ export async function checkOut(employeeId: string) {
 
   return prisma.attendance.update({
     where: { id: record.id },
-    data: { checkOut: checkOutTime, overtimeHrs },
+    data: {
+      checkOut: checkOutTime,
+      overtimeHrs,
+      latitude: record.latitude ?? location?.latitude ?? null,
+      longitude: record.longitude ?? location?.longitude ?? null,
+    },
   });
 }
 

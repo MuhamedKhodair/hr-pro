@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, LogIn, LogOut, Download } from 'lucide-react';
+import { Clock, LogIn, LogOut, Download, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,8 @@ interface AttendanceRecord {
   checkOut: string | null;
   status: string;
   overtimeHrs: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface BeforeInstallPromptEvent extends Event {
@@ -69,13 +71,35 @@ export default function ClockPage() {
   const checkInMutation = useApiPost([['attendance-today']]);
   const checkOutMutation = useApiPost([['attendance-today']]);
   const busy = checkInMutation.isPending || checkOutMutation.isPending;
+  const [locating, setLocating] = useState(false);
+
+  const getPosition = (): Promise<{ latitude: number; longitude: number }> =>
+    new Promise((resolve, reject) => {
+      if (!('geolocation' in navigator)) {
+        reject(new Error(t('Location not supported by this browser')));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          }),
+        (err) => reject(new Error(err.code === err.PERMISSION_DENIED ? t('Location denied') : t('Location unavailable'))),
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 },
+      );
+    });
 
   const handleCheckIn = async () => {
     try {
-      await checkInMutation.mutateAsync({ endpoint: '/attendance/check-in', data: {} });
+      setLocating(true);
+      const { latitude, longitude } = await getPosition();
+      await checkInMutation.mutateAsync({ endpoint: '/attendance/check-in', data: { latitude, longitude } });
       addToast(t('Check In'), 'success');
     } catch (err: any) {
       addToast(err.message, 'error');
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -147,7 +171,9 @@ export default function ClockPage() {
             busy && 'opacity-70',
           ].join(' ')}
         >
-          {action === 'in' ? (
+          {locating ? (
+            <Loader2 className="h-10 w-10 animate-spin" strokeWidth={2.25} />
+          ) : action === 'in' ? (
             <LogIn className="h-10 w-10" strokeWidth={2.25} />
           ) : action === 'out' ? (
             <LogOut className="h-10 w-10" strokeWidth={2.25} />
@@ -155,13 +181,31 @@ export default function ClockPage() {
             <Clock className="h-10 w-10" strokeWidth={2.25} />
           )}
           <span className="text-lg font-semibold">
-            {action === 'in' ? t('Check In') : action === 'out' ? t('Check Out') : t('Day complete')}
+            {locating
+              ? t('Getting your location…')
+              : action === 'in'
+                ? t('Check In')
+                : action === 'out'
+                  ? t('Check Out')
+                  : t('Day complete')}
           </span>
           <span className="text-xs font-normal opacity-80">
-            {action === 'in' ? t('Not checked in yet') : action === 'out' ? t('Working now') : ''}
+            {locating
+              ? ''
+              : action === 'in'
+                ? t('Not checked in yet')
+                : action === 'out'
+                  ? t('Working now')
+                  : ''}
           </span>
         </button>
       </motion.div>
+
+      {action === 'in' && !locating && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5" /> {t('Location required for check-in')}
+        </p>
+      )}
 
       <Card className="w-full">
         <CardContent className="space-y-3 p-4 text-sm">
@@ -176,6 +220,22 @@ export default function ClockPage() {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{t('Overtime (hrs)')}</span>
             <span className="font-medium tabular-nums">{record?.overtimeHrs ? `${record.overtimeHrs}h` : '0h'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">{t('Location')}</span>
+            {record?.latitude != null && record.longitude != null ? (
+              <a
+                href={`https://maps.google.com/?q=${record.latitude},${record.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                {t('Open in Maps')}
+              </a>
+            ) : (
+              <span className="font-medium tabular-nums">—</span>
+            )}
           </div>
         </CardContent>
       </Card>

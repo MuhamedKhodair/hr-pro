@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardCheck, Users, Download, Upload, Pencil } from 'lucide-react';
+import { ClipboardCheck, Users, Download, Upload, Pencil, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExportActions } from '@/components/reports/export-actions';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,6 +31,8 @@ interface AttendanceRecord {
   status: string;
   overtimeHrs: number;
   notes: string | null;
+  latitude: number | null;
+  longitude: number | null;
   employee: { id: string; name: string; email: string; department: { name: string } | null };
 }
 
@@ -278,6 +280,7 @@ export default function AttendancePage() {
               <TableHead>{t('Check Out')}</TableHead>
               <TableHead>{t('Status')}</TableHead>
               <TableHead>{t('Overtime')}</TableHead>
+              <TableHead>{t('Location')}</TableHead>
               <TableHead className="text-end">{t('Actions')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -304,6 +307,21 @@ export default function AttendancePage() {
                   <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
                 </TableCell>
                 <TableCell>{record.overtimeHrs > 0 ? `${record.overtimeHrs}h` : '-'}</TableCell>
+                <TableCell>
+                  {record.latitude != null && record.longitude != null ? (
+                    <a
+                      href={`https://maps.google.com/?q=${record.latitude},${record.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                      aria-label={t('Open in Maps')}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-end">
                   {isManager ? (
                     <Button

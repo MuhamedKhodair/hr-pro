@@ -36,9 +36,14 @@ describe('quick clock (self check-in/check-out)', () => {
     const emp = await loginAs(env, 'clock@hrpro.com', 'admin123');
     const token = emp.accessToken;
 
-    const checkIn = await env.request('POST', '/api/attendance/check-in', { token, body: {} });
+    const checkIn = await env.request('POST', '/api/attendance/check-in', {
+      token,
+      body: { latitude: 30.0444, longitude: 31.2357 },
+    });
     assert.equal(checkIn.status, 201, JSON.stringify(checkIn.json));
     assert.ok(checkIn.json.data.checkIn);
+    assert.equal(checkIn.json.data.latitude, 30.0444);
+    assert.equal(checkIn.json.data.longitude, 31.2357);
 
     const checkOut = await env.request('POST', '/api/attendance/check-out', { token, body: {} });
     assert.equal(checkOut.status, 200, JSON.stringify(checkOut.json));
@@ -49,6 +54,8 @@ describe('quick clock (self check-in/check-out)', () => {
     assert.equal(today.json.data.length, 1);
     assert.ok(today.json.data[0].checkIn);
     assert.ok(today.json.data[0].checkOut);
+    assert.equal(today.json.data[0].latitude, 30.0444);
+    assert.equal(today.json.data[0].longitude, 31.2357);
   });
 
   test('employee cannot force check-in for another employee', async () => {

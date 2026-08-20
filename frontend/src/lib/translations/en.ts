@@ -674,6 +674,12 @@ const en: Record<string, string> = {
   'Working now': 'Working now',
   'Install App': 'Install App',
   'Retry': 'Retry',
+  'Location required for check-in': 'Location required for check-in',
+  'Getting your location…': 'Getting your location…',
+  'Location denied': 'Location permission denied',
+  'Location unavailable': 'Location unavailable',
+  'Location not supported by this browser': 'Location is not supported by this browser',
+  'Open in Maps': 'Open in Maps',
 };
 
 export default en;
