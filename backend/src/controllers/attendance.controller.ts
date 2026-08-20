@@ -23,9 +23,14 @@ export async function getToday(req: AuthRequest, res: Response, next: NextFuncti
 
 export async function checkIn(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    let { employeeId } = attendanceService.checkInSchema.parse(req.body);
+    let employeeId: string | undefined;
     if (req.user?.role === 'Employee') {
-      employeeId = req.user.employeeId!;
+      employeeId = req.user.employeeId ?? undefined;
+    } else {
+      ({ employeeId } = attendanceService.checkInSchema.parse(req.body));
+    }
+    if (!employeeId) {
+      return res.status(400).json({ success: false, error: 'employeeId is required' });
     }
     const record = await attendanceService.checkIn(employeeId);
     res.status(201).json({ success: true, data: record });
@@ -36,9 +41,14 @@ export async function checkIn(req: AuthRequest, res: Response, next: NextFunctio
 
 export async function checkOut(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    let { employeeId } = attendanceService.checkInSchema.parse(req.body);
+    let employeeId: string | undefined;
     if (req.user?.role === 'Employee') {
-      employeeId = req.user.employeeId!;
+      employeeId = req.user.employeeId ?? undefined;
+    } else {
+      ({ employeeId } = attendanceService.checkInSchema.parse(req.body));
+    }
+    if (!employeeId) {
+      return res.status(400).json({ success: false, error: 'employeeId is required' });
     }
     const record = await attendanceService.checkOut(employeeId);
     res.json({ success: true, data: record });
