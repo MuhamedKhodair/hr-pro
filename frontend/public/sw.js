@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hr-pro-shell-v2';
+const CACHE_NAME = 'hr-pro-shell-v3';
 
 const SHELL = ['/', '/clock', '/attendance', '/dashboard', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
@@ -17,6 +17,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+
+  // Never cache API responses — they are user-specific (each user must see only their own session data).
+  if (request.url.includes('/api/')) return;
+
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
