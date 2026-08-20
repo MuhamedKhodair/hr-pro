@@ -10,7 +10,10 @@ export async function getToday(req: AuthRequest, res: Response, next: NextFuncti
   try {
     const isEmployee = req.user?.role === 'Employee';
     if (isEmployee) {
-      const records = await attendanceService.getToday(req.user!.employeeId!);
+      if (!req.user!.employeeId) {
+        return res.json({ success: true, data: [] });
+      }
+      const records = await attendanceService.getToday(req.user!.employeeId);
       return res.json({ success: true, data: records });
     }
     const employeeId = req.query.employeeId as string | undefined;
@@ -72,6 +75,9 @@ export async function getDateRange(req: AuthRequest, res: Response, next: NextFu
     };
     if (!start || !end) {
       return res.status(400).json({ success: false, error: 'start and end are required' });
+    }
+    if (req.user?.role === 'Employee' && !req.user.employeeId) {
+      return res.json({ success: true, data: [] });
     }
     const scopedId = req.user?.role === 'Employee' ? req.user.employeeId! : employeeId;
     const records = await attendanceService.getDateRange(scopedId, start, end);

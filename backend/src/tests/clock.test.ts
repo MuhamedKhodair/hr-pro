@@ -77,4 +77,18 @@ describe('quick clock (self check-in/check-out)', () => {
     assert.equal(res.status, 400);
     assert.match(res.json.error, /employeeId/);
   });
+
+  test('employee without a linked profile sees no one else\'s attendance', async () => {
+    const pwd = await hashPassword('admin123');
+    await env.prisma.user.create({ data: { email: 'ghost@hrpro.com', password: pwd, role: 'Employee' } });
+    const ghost = await loginAs(env, 'ghost@hrpro.com', 'admin123');
+
+    const today = await env.request('GET', '/api/attendance/today', { token: ghost.accessToken });
+    assert.equal(today.status, 200);
+    assert.deepEqual(today.json.data, []);
+
+    const checkIn = await env.request('POST', '/api/attendance/check-in', { token: ghost.accessToken, body: {} });
+    assert.equal(checkIn.status, 400);
+    assert.match(checkIn.json.error, /employeeId/);
+  });
 });
