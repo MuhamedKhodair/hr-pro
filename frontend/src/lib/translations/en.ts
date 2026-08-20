@@ -680,6 +680,11 @@ const en: Record<string, string> = {
   'Location unavailable': 'Location unavailable',
   'Location not supported by this browser': 'Location is not supported by this browser',
   'Open in Maps': 'Open in Maps',
+  'GPS turned off on device': 'Location is turned off on your device',
+  'Android: enable Location in Settings, then refresh and Allow': 'Android: Settings → Location → turn it on, return here and press Allow',
+  'iPhone: Settings → Privacy → Location Services → turn on for this browser': 'iPhone: Settings → Privacy → Location Services → turn it on for this browser',
+  'Then press the button again — a GPS fix forwards the browser permission popup': 'Then press the button again — a GPS fix opens the browser permission popup',
+  'Try Again': 'Try Again',
 };
 
 export default en;

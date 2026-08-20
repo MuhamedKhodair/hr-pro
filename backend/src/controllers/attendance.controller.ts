@@ -29,16 +29,17 @@ export async function checkIn(req: AuthRequest, res: Response, next: NextFunctio
     let employeeId: string | undefined;
     let latitude: number | null | undefined;
     let longitude: number | null | undefined;
+    let accuracy: number | null | undefined;
     if (req.user?.role === 'Employee') {
       employeeId = req.user.employeeId ?? undefined;
-      ({ latitude, longitude } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
+      ({ latitude, longitude, accuracy } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
     } else {
-      ({ employeeId, latitude, longitude } = attendanceService.checkInSchema.parse(req.body));
+      ({ employeeId, latitude, longitude, accuracy } = attendanceService.checkInSchema.parse(req.body));
     }
     if (!employeeId) {
       return res.status(400).json({ success: false, error: 'employeeId is required' });
     }
-    const record = await attendanceService.checkIn(employeeId, { latitude, longitude });
+    const record = await attendanceService.checkIn(employeeId, { latitude, longitude, accuracy });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     next(err);
@@ -50,16 +51,17 @@ export async function checkOut(req: AuthRequest, res: Response, next: NextFuncti
     let employeeId: string | undefined;
     let latitude: number | null | undefined;
     let longitude: number | null | undefined;
+    let accuracy: number | null | undefined;
     if (req.user?.role === 'Employee') {
       employeeId = req.user.employeeId ?? undefined;
-      ({ latitude, longitude } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
+      ({ latitude, longitude, accuracy } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
     } else {
-      ({ employeeId, latitude, longitude } = attendanceService.checkInSchema.parse(req.body));
+      ({ employeeId, latitude, longitude, accuracy } = attendanceService.checkInSchema.parse(req.body));
     }
     if (!employeeId) {
       return res.status(400).json({ success: false, error: 'employeeId is required' });
     }
-    const record = await attendanceService.checkOut(employeeId, { latitude, longitude });
+    const record = await attendanceService.checkOut(employeeId, { latitude, longitude, accuracy });
     res.json({ success: true, data: record });
   } catch (err) {
     next(err);

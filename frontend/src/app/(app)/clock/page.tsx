@@ -20,6 +20,7 @@ interface AttendanceRecord {
   overtimeHrs: number;
   latitude: number | null;
   longitude: number | null;
+  accuracy: number | null;
 }
 
 interface BeforeInstallPromptEvent extends Event {
@@ -72,32 +73,57 @@ export default function ClockPage() {
   const checkOutMutation = useApiPost([['attendance-today']]);
   const busy = checkInMutation.isPending || checkOutMutation.isPending;
   const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
-  const getPosition = (): Promise<{ latitude: number; longitude: number }> =>
-    new Promise((resolve, reject) => {
+  const getPosition = () =>
+    new Promise<{ latitude: number; longitude: number; accuracy: number }>((resolve, reject) => {
+      const requestFix = () => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) =>
+            resolve({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy: Math.round(pos.coords.accuracy),
+            }),
+          (err) =>
+            reject(
+              err.code === err.PERMISSION_DENIED
+                ? new Error(t('GPS turned off on device'))
+                : new Error(t('Location unavailable')),
+            ),
+          { enableHighAccuracy: true, timeout: 12000 },
+        );
+      };
+
       if (!('geolocation' in navigator)) {
         reject(new Error(t('Location not supported by this browser')));
         return;
       }
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          resolve({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          }),
-        (err) => reject(new Error(err.code === err.PERMISSION_DENIED ? t('Location denied') : t('Location unavailable'))),
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 },
-      );
+      if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+        navigator.permissions
+          .query({ name: 'geolocation' as PermissionName })
+          .then((status) => {
+            if (status.state === 'denied') {
+              reject(new Error(t('GPS turned off on device')));
+              return;
+            }
+            requestFix();
+          })
+          .catch(() => requestFix());
+        return;
+      }
+      requestFix();
     });
 
   const handleCheckIn = async () => {
     try {
       setLocating(true);
-      const { latitude, longitude } = await getPosition();
-      await checkInMutation.mutateAsync({ endpoint: '/attendance/check-in', data: { latitude, longitude } });
+      setLocationError(null);
+      const { latitude, longitude, accuracy } = await getPosition();
+      await checkInMutation.mutateAsync({ endpoint: '/attendance/check-in', data: { latitude, longitude, accuracy } });
       addToast(t('Check In'), 'success');
     } catch (err: any) {
-      addToast(err.message, 'error');
+      setLocationError(err.message);
     } finally {
       setLocating(false);
     }
@@ -201,10 +227,26 @@ export default function ClockPage() {
         </button>
       </motion.div>
 
-      {action === 'in' && !locating && (
+      {action === 'in' && !locating && !locationError && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" /> {t('Location required for check-in')}
         </p>
+      )}
+
+      {locationError && action === 'in' && (
+        <div className="w-full rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 text-start">
+          <p className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <MapPin className="h-4 w-4" /> {locationError}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 ps-5 text-xs text-muted-foreground">
+            <li>{t('Android: enable Location in Settings, then refresh and Allow')}</li>
+            <li>{t('iPhone: Settings → Privacy → Location Services → turn on for this browser')}</li>
+            <li>{t('Then press the button again — a GPS fix forwards the browser permission popup')}</li>
+          </ul>
+          <Button size="sm" variant="outline" className="mt-3 gap-2" onClick={() => setLocationError(null)}>
+            <MapPin className="h-3.5 w-3.5" /> {t('Try Again')}
+          </Button>
+        </div>
       )}
 
       <Card className="w-full">
@@ -224,15 +266,22 @@ export default function ClockPage() {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{t('Location')}</span>
             {record?.latitude != null && record.longitude != null ? (
-              <a
-                href={`https://maps.google.com/?q=${record.latitude},${record.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 font-medium text-primary hover:underline"
-              >
-                <MapPin className="h-3.5 w-3.5" />
-                {t('Open in Maps')}
-              </a>
+              <span className="flex items-center gap-2">
+                {record.accuracy != null && (
+                  <span className="text-xs text-muted-foreground">
+                    ±{record.accuracy > 999 ? (record.accuracy / 1000).toFixed(1) + 'km' : record.accuracy + 'm'}
+                  </span>
+                )}
+                <a
+                  href={`https://maps.google.com/?q=${record.latitude},${record.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 font-medium text-primary hover:underline"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {t('Open in Maps')}
+                </a>
+              </span>
             ) : (
               <span className="font-medium tabular-nums">—</span>
             )}

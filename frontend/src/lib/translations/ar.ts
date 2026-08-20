@@ -680,6 +680,11 @@ const ar: Record<string, string> = {
   'Location unavailable': 'الموقع غير متاح',
   'Location not supported by this browser': 'المتصفح لا يدعم تحديد الموقع',
   'Open in Maps': 'فتح في الخرائط',
+  'GPS turned off on device': 'الموقع مغلق على جهازك',
+  'Android: enable Location in Settings, then refresh and Allow': 'أندرويد: الإعدادات ← الموقع ← فعّله، وارجع هنا واضغط السماح',
+  'iPhone: Settings → Privacy → Location Services → turn on for this browser': 'آيفون: الإعدادات ← الخصوصية ← خدمات الموقع ← فعّلها لهذا المتصفح',
+  'Then press the button again — a GPS fix forwards the browser permission popup': 'ثم اضغط الزر مجددًا — تثبيت GPS يفتح نافذة إذن المتصفح',
+  'Try Again': 'حاول مجددًا',
 };
 
 export default ar;

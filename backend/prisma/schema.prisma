@@ -220,6 +220,7 @@ model Attendance {
   overtimeHrs Float            @default(0)
   latitude    Float?
   longitude   Float?
+  accuracy    Float?
   employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt

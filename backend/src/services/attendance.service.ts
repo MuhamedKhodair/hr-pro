@@ -6,6 +6,7 @@ export const checkInSchema = z.object({
   employeeId: z.string(),
   latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
   longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+  accuracy: z.coerce.number().min(0).max(100000).optional().nullable(),
 });
 
 export const manualEntrySchema = z.object({
@@ -67,7 +68,10 @@ export async function getDateRange(
   });
 }
 
-export async function checkIn(employeeId: string, location?: { latitude?: number | null; longitude?: number | null }) {
+export async function checkIn(
+  employeeId: string,
+  location?: { latitude?: number | null; longitude?: number | null; accuracy?: number | null },
+) {
   const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
   if (!employee) throw new AppError(404, 'Employee not found');
 
@@ -88,11 +92,15 @@ export async function checkIn(employeeId: string, location?: { latitude?: number
       checkIn: new Date(),
       latitude: location?.latitude ?? null,
       longitude: location?.longitude ?? null,
+      accuracy: location?.accuracy ?? null,
     },
   });
 }
 
-export async function checkOut(employeeId: string, location?: { latitude?: number | null; longitude?: number | null }) {
+export async function checkOut(
+  employeeId: string,
+  location?: { latitude?: number | null; longitude?: number | null; accuracy?: number | null },
+) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -118,6 +126,7 @@ export async function checkOut(employeeId: string, location?: { latitude?: numbe
       overtimeHrs,
       latitude: record.latitude ?? location?.latitude ?? null,
       longitude: record.longitude ?? location?.longitude ?? null,
+      accuracy: record.accuracy ?? location?.accuracy ?? null,
     },
   });
 }
