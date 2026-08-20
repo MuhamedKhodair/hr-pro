@@ -30,6 +30,8 @@ import path from 'path';
 
 const app = express();
 
+app.set('trust proxy', true);
+
 // --- Public brand assets (logos are non-sensitive) ---
 app.use('/uploads/brand', express.static(path.join(process.cwd(), 'uploads', 'brand'), { maxAge: '1d' }));
 
