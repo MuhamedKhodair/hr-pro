@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Building, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,6 +65,7 @@ export default function LoginPage() {
         setTwoFactorToken(result.twoFactorToken);
         return;
       }
+      await queryClient.clear();
       addToast('Login successful!', 'success');
       router.push(getHomePath(result));
     } catch (err: any) {
@@ -77,6 +80,7 @@ export default function LoginPage() {
     setVerifying2fa(true);
     try {
       await twoFactorLogin(twoFactorToken, twoFactorCode);
+      await queryClient.clear();
       addToast('Login successful!', 'success');
       router.push(getHomePath());
     } catch (err: any) {
