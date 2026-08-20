@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/toast';
 import { useApiGet, useApiPost } from '@/hooks/useApi';
 import { useTranslation } from '@/lib/i18n';
+import { getUser } from '@/lib/auth';
 import { formatDateTime } from '@/lib/utils';
 
 interface AttendanceRecord {
@@ -46,6 +47,7 @@ export default function ClockPage() {
   const { addToast } = useToast();
   const [now, setNow] = useState(() => new Date());
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const me = getUser();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -172,6 +174,7 @@ export default function ClockPage() {
       <div>
         <p className="text-xl font-medium text-muted-foreground">{date}</p>
         <p className="mt-1 font-display text-6xl font-bold tracking-tight tabular-nums">{time}</p>
+        {me?.email && <p className="mt-2 font-mono text-xs text-muted-foreground">{me.email}</p>}
       </div>
 
       {record && (

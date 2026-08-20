@@ -10,7 +10,28 @@ function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
   if (process.env.NODE_ENV !== 'production') return;
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        reg.addEventListener('updatefound', () => {
+          const worker = reg.installing;
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch(() => undefined);
+
+    let refreshed = false;
+    navigator.serviceWorker.addEventListener('message', (msg) => {
+      if (msg.data?.type === 'SW_UPDATED' && !refreshed) {
+        refreshed = true;
+        window.location.reload();
+      }
+    });
   });
 }
 

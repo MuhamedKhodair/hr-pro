@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hr-pro-shell-v3';
+const CACHE_NAME = 'hr-pro-shell-v4';
 
 const SHELL = ['/', '/clock', '/attendance', '/dashboard', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
@@ -11,7 +11,12 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
+      .then(() =>
+        self.clients
+          .matchAll({ type: 'window', includeUncontrolled: true })
+          .then((clients) => clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', cache: CACHE_NAME }))),
+      ),
   );
 });
 
