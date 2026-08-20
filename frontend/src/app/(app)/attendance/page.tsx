@@ -33,6 +33,7 @@ interface AttendanceRecord {
   notes: string | null;
   latitude: number | null;
   longitude: number | null;
+  accuracy: number | null;
   employee: { id: string; name: string; email: string; department: { name: string } | null };
 }
 
@@ -309,15 +310,25 @@ export default function AttendancePage() {
                 <TableCell>{record.overtimeHrs > 0 ? `${record.overtimeHrs}h` : '-'}</TableCell>
                 <TableCell>
                   {record.latitude != null && record.longitude != null ? (
-                    <a
-                      href={`https://maps.google.com/?q=${record.latitude},${record.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                      aria-label={t('Open in Maps')}
-                    >
-                      <MapPin className="h-3.5 w-3.5" />
-                    </a>
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                        {Number(record.latitude).toFixed(5)}, {Number(record.longitude).toFixed(5)}
+                      </span>
+                      <a
+                        href={`https://maps.google.com/?q=${record.latitude},${record.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        <MapPin className="h-3.5 w-3.5" />
+                        {t('Open in Maps')}
+                        {record.accuracy != null && (
+                          <span className="text-xs text-muted-foreground">
+                            (±{record.accuracy > 999 ? `${(record.accuracy / 1000).toFixed(1)} km` : `${record.accuracy} m`})
+                          </span>
+                        )}
+                      </a>
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">-</span>
                   )}
