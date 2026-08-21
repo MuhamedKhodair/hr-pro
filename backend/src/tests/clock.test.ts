@@ -7,12 +7,15 @@ let env: TestEnv;
 before(async () => {
   env = await startTestEnv('test-clock.db');
   const dept = await env.prisma.department.create({ data: { name: 'Ops' } });
-  const [emp, emp2] = await Promise.all([
+  const [emp, emp2, adminEmp] = await Promise.all([
     env.prisma.employee.create({
       data: { name: 'Clock Tester', email: 'clock@hrpro.com', position: 'Clerk', departmentId: dept.id, hireDate: new Date('2025-01-01'), status: 'Active', salary: 1000 },
     }),
     env.prisma.employee.create({
       data: { name: 'Self Emp', email: 'self@hrpro.com', position: 'Clerk', departmentId: dept.id, hireDate: new Date('2025-01-01'), status: 'Active', salary: 1000 },
+    }),
+    env.prisma.employee.create({
+      data: { name: 'Alice Admin', email: 'alice@hrpro.com', position: 'Manager', departmentId: dept.id, hireDate: new Date('2025-01-01'), status: 'Active', salary: 3000 },
     }),
   ]);
   const pwd = await hashPassword('admin123');
@@ -25,6 +28,7 @@ before(async () => {
   });
   await env.prisma.user.update({ where: { email: 'clock@hrpro.com' }, data: { employeeId: emp.id } });
   await env.prisma.user.update({ where: { email: 'self@hrpro.com' }, data: { employeeId: emp2.id } });
+  await env.prisma.user.update({ where: { email: 'alice@hrpro.com' }, data: { employeeId: adminEmp.id } });
 });
 
 after(async () => {
@@ -73,11 +77,67 @@ describe('quick clock (self check-in/check-out)', () => {
     assert.equal(res.json.data.employeeId, (await env.prisma.user.findUnique({ where: { email: 'self@hrpro.com' } }))!.employeeId);
   });
 
-  test('admin check-in still requires employeeId', async () => {
+  test('admin check-in still requires employeeId when not self', async () => {
     const admin = await loginAs(env, 'alice@hrpro.com', 'admin123');
     const res = await env.request('POST', '/api/attendance/check-in', { token: admin.accessToken, body: {} });
     assert.equal(res.status, 400);
     assert.match(res.json.error, /employeeId/);
+  });
+
+  test('admin with a linked profile can self check-in and sees only their record on ?self=1', async () => {
+    const admin = await loginAs(env, 'alice@hrpro.com', 'admin123');
+    const aliceId = (await env.prisma.user.findUnique({ where: { email: 'alice@hrpro.com' } }))!.employeeId!;
+
+    const checkIn = await env.request('POST', '/api/attendance/check-in', {
+      token: admin.accessToken,
+      body: { self: true, latitude: 30.0445, longitude: 31.2358, accuracy: 9 },
+    });
+    assert.equal(checkIn.status, 201, JSON.stringify(checkIn.json));
+    assert.equal(checkIn.json.data.employeeId, aliceId);
+
+    const self = await env.request('GET', '/api/attendance/today?self=1', { token: admin.accessToken });
+    assert.equal(self.status, 200);
+    assert.ok(self.json.data.length >= 1);
+    assert.ok(self.json.data.every((r: any) => r.employeeId === aliceId));
+
+    const checkOut = await env.request('POST', '/api/attendance/check-out', {
+      token: admin.accessToken,
+      body: { self: true },
+    });
+    assert.equal(checkOut.status, 200, JSON.stringify(checkOut.json));
+    assert.equal(checkOut.json.data.employeeId, aliceId);
+    assert.ok(checkOut.json.data.checkOut);
+  });
+
+  test('admin without a linked profile gets 400 (no self clock-in possible)', async () => {
+    const pwd = await hashPassword('admin123');
+    await env.prisma.user.create({ data: { email: 'orphan@hrpro.com', password: pwd, role: 'Admin' } });
+    const orphan = await loginAs(env, 'orphan@hrpro.com', 'admin123');
+
+    const res = await env.request('POST', '/api/attendance/check-in', {
+      token: orphan.accessToken,
+      body: { self: true },
+    });
+    assert.equal(res.status, 400);
+    assert.match(res.json.error, /employeeId is required/);
+
+    const today = await env.request('GET', '/api/attendance/today?self=1', { token: orphan.accessToken });
+    assert.equal(today.status, 200);
+    assert.deepEqual(today.json.data, []);
+  });
+
+  test('getDateRange ?self=1 scopes to the caller for every role', async () => {
+    for (const email of ['clock@hrpro.com', 'alice@hrpro.com']) {
+      const { accessToken } = await loginAs(env, email, 'admin123');
+      const me = (await env.prisma.user.findUnique({ where: { email } }))!.employeeId!;
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await env.request('GET', `/api/attendance/range?start=${today}&end=${today}&self=1`, {
+        token: accessToken,
+      });
+      assert.equal(res.status, 200);
+      assert.ok(Array.isArray(res.json.data));
+      assert.ok(res.json.data.every((r: any) => r.employeeId === me), `${email} saw other employees: ${res.json.data.length}`);
+    }
   });
 
   test('employee without a linked profile sees no one else\'s attendance', async () => {

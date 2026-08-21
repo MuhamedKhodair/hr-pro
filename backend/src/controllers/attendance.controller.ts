@@ -8,8 +8,8 @@ import { z } from 'zod';
 
 export async function getToday(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const isEmployee = req.user?.role === 'Employee';
-    if (isEmployee) {
+    const scopeSelf = req.user?.role === 'Employee' || req.query.self === '1' || req.query.self === 'true';
+    if (scopeSelf) {
       if (!req.user!.employeeId) {
         return res.json({ success: true, data: [] });
       }
@@ -30,8 +30,9 @@ export async function checkIn(req: AuthRequest, res: Response, next: NextFunctio
     let latitude: number | null | undefined;
     let longitude: number | null | undefined;
     let accuracy: number | null | undefined;
-    if (req.user?.role === 'Employee') {
-      employeeId = req.user.employeeId ?? undefined;
+    const scopeSelf = req.user?.role === 'Employee' || req.body?.self === true || req.body?.self === '1';
+    if (scopeSelf) {
+      employeeId = req.user?.employeeId ?? undefined;
       ({ latitude, longitude, accuracy } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
     } else {
       ({ employeeId, latitude, longitude, accuracy } = attendanceService.checkInSchema.parse(req.body));
@@ -52,8 +53,9 @@ export async function checkOut(req: AuthRequest, res: Response, next: NextFuncti
     let latitude: number | null | undefined;
     let longitude: number | null | undefined;
     let accuracy: number | null | undefined;
-    if (req.user?.role === 'Employee') {
-      employeeId = req.user.employeeId ?? undefined;
+    const scopeSelf = req.user?.role === 'Employee' || req.body?.self === true || req.body?.self === '1';
+    if (scopeSelf) {
+      employeeId = req.user?.employeeId ?? undefined;
       ({ latitude, longitude, accuracy } = attendanceService.checkInSchema.omit({ employeeId: true }).parse(req.body));
     } else {
       ({ employeeId, latitude, longitude, accuracy } = attendanceService.checkInSchema.parse(req.body));
@@ -78,10 +80,11 @@ export async function getDateRange(req: AuthRequest, res: Response, next: NextFu
     if (!start || !end) {
       return res.status(400).json({ success: false, error: 'start and end are required' });
     }
-    if (req.user?.role === 'Employee' && !req.user.employeeId) {
+    const scopeSelf = req.user?.role === 'Employee' || req.query.self === '1' || req.query.self === 'true';
+    if (scopeSelf && !req.user!.employeeId) {
       return res.json({ success: true, data: [] });
     }
-    const scopedId = req.user?.role === 'Employee' ? req.user.employeeId! : employeeId;
+    const scopedId = scopeSelf ? req.user!.employeeId! : employeeId;
     const records = await attendanceService.getDateRange(scopedId, start, end);
     res.json({ success: true, data: records });
   } catch (err) {

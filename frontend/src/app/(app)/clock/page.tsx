@@ -63,7 +63,7 @@ export default function ClockPage() {
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
   }, []);
 
-  const { data: records, isLoading, error, refetch } = useApiGet<AttendanceRecord[]>(['attendance-today'], '/attendance/today');
+  const { data: records, isLoading, error, refetch } = useApiGet<AttendanceRecord[]>(['attendance-today', me?.email ?? ''], '/attendance/today?self=1');
 
   const record = records?.find((r) => r.checkIn) ?? records?.[0];
 
@@ -122,7 +122,7 @@ export default function ClockPage() {
       setLocating(true);
       setLocationError(null);
       const { latitude, longitude, accuracy } = await getPosition();
-      await checkInMutation.mutateAsync({ endpoint: '/attendance/check-in', data: { latitude, longitude, accuracy } });
+      await checkInMutation.mutateAsync({ endpoint: '/attendance/check-in', data: { latitude, longitude, accuracy, self: true } });
       addToast(t('Check In'), 'success');
     } catch (err: any) {
       setLocationError(err.message);
@@ -133,7 +133,7 @@ export default function ClockPage() {
 
   const handleCheckOut = async () => {
     try {
-      await checkOutMutation.mutateAsync({ endpoint: '/attendance/check-out', data: {} });
+      await checkOutMutation.mutateAsync({ endpoint: '/attendance/check-out', data: { self: true } });
       addToast(t('Check Out'), 'success');
     } catch (err: any) {
       addToast(err.message, 'error');

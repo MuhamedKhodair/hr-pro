@@ -260,7 +260,6 @@ export default function LoginPage() {
                 ['HR', 'bob@hrpro.com', 'admin123'],
                 ['Employee', 'charlie@hrpro.com', 'admin123'],
                 ['Employee', 'diana@hrpro.com', 'admin123'],
-                ['Employee', 'erin@hrpro.com', 'admin123'],
               ] as const).map(([role, email, password]) => (
                 <button
                   key={role}
